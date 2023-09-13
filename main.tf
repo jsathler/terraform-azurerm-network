@@ -181,13 +181,13 @@ resource "azurerm_network_watcher_flow_log" "default" {
   }
 
   dynamic "traffic_analytics" {
-    for_each = var.network_flow_log.traffic_analytics_workspace_enabled ? [var.network_flow_log] : []
+    for_each = try(var.network_flow_log.traffic_analytics_workspace, null) == null ? [] : [var.network_flow_log.traffic_analytics_workspace]
     content {
       enabled               = true
-      workspace_id          = traffic_analytics.value.traffic_analytics_workspace_id
-      workspace_region      = traffic_analytics.value.traffic_analytics_workspace_location
-      workspace_resource_id = traffic_analytics.value.traffic_analytics_workspace_resource_id
-      interval_in_minutes   = traffic_analytics.value.traffic_analytics_workspace_inverval
+      workspace_id          = traffic_analytics.value.id
+      workspace_region      = traffic_analytics.value.location
+      workspace_resource_id = traffic_analytics.value.resource_id
+      interval_in_minutes   = traffic_analytics.value.inverval
     }
   }
 

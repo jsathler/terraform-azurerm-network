@@ -199,10 +199,11 @@ module "shared-vnet" {
   }
 
   network_flow_log = {
-    storage_account_id                      = azurerm_storage_account.default.id
-    traffic_analytics_workspace_enabled     = true
-    traffic_analytics_workspace_id          = azurerm_log_analytics_workspace.default.workspace_id
-    traffic_analytics_workspace_resource_id = azurerm_log_analytics_workspace.default.id
+    storage_account_id = azurerm_storage_account.default.id
+    traffic_analytics_workspace = {
+      id          = azurerm_log_analytics_workspace.default.workspace_id
+      resource_id = azurerm_log_analytics_workspace.default.id
+    }
   }
 }
 
@@ -240,10 +241,11 @@ module "prd-vnet" {
   }
 
   network_flow_log = {
-    storage_account_id                      = azurerm_storage_account.default.id
-    traffic_analytics_workspace_enabled     = true
-    traffic_analytics_workspace_id          = azurerm_log_analytics_workspace.default.workspace_id
-    traffic_analytics_workspace_resource_id = azurerm_log_analytics_workspace.default.id
+    storage_account_id = azurerm_storage_account.default.id
+    traffic_analytics_workspace = {
+      id          = azurerm_log_analytics_workspace.default.workspace_id
+      resource_id = azurerm_log_analytics_workspace.default.id
+    }
   }
 }
 

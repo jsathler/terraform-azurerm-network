@@ -1,3 +1,13 @@
+/*
+This example will create three vnets with different subnets requirements
+
+A peering between hub x shared and hub x prd will be created in order to enable the "hub and spoke architecture"
+
+Flow Logs will be enabled on subnets in prd and shared vnets
+
+If you have multiple subscriptions, provide the subscription ids in locals and uncomment them. Remember to uncomment "subscription_id" in the provider blocks
+
+*/
 locals {
   # hub_subscription_id    = ""
   # shared_subscription_id = ""
@@ -66,17 +76,17 @@ provider "azurerm" {
   #subscription_id = local.hub_subscription_id
 }
 
-# provider "azurerm" {
-#   features {}
-#   #subscription_id = local.shared_subscription_id
-#   alias = "shared"
-# }
+provider "azurerm" {
+  features {}
+  #subscription_id = local.shared_subscription_id
+  alias = "shared"
+}
 
-# provider "azurerm" {
-#   features {}
-#   #subscription_id = local.prd_subscription_id
-#   alias = "prd"
-# }
+provider "azurerm" {
+  features {}
+  #subscription_id = local.prd_subscription_id
+  alias = "prd"
+}
 
 resource "azurerm_resource_group" "hub" {
   name     = "networking-hub-rg"
@@ -86,19 +96,19 @@ resource "azurerm_resource_group" "hub" {
 resource "azurerm_resource_group" "shared" {
   name     = "networking-shared-rg"
   location = var.location
-  # provider = azurerm.shared
+  provider = azurerm.shared
 }
 
 resource "azurerm_resource_group" "prd" {
   name     = "networking-prd-rg"
   location = var.location
-  # provider = azurerm.prd
+  provider = azurerm.prd
 }
 
 resource "azurerm_resource_group" "logging_shared" {
   name     = "logging-shared-rg"
   location = var.location
-  # provider = azurerm.shared
+  provider = azurerm.shared
 }
 
 resource "random_string" "default" {
@@ -162,9 +172,9 @@ module "hub-vnet" {
 module "shared-vnet" {
   source = "../../"
 
-  # providers = {
-  #   azurerm = azurerm.shared
-  # }
+  providers = {
+    azurerm = azurerm.shared
+  }
 
   name                = "shared"
   location            = azurerm_resource_group.shared.location
@@ -189,7 +199,6 @@ module "shared-vnet" {
   }
 
   network_flow_log = {
-    enabled                                 = true
     storage_account_id                      = azurerm_storage_account.default.id
     traffic_analytics_workspace_enabled     = true
     traffic_analytics_workspace_id          = azurerm_log_analytics_workspace.default.workspace_id
@@ -200,9 +209,9 @@ module "shared-vnet" {
 module "prd-vnet" {
   source = "../../"
 
-  # providers = {
-  #   azurerm = azurerm.prd
-  # }
+  providers = {
+    azurerm = azurerm.prd
+  }
 
   name                = "prd"
   location            = azurerm_resource_group.prd.location
@@ -231,10 +240,33 @@ module "prd-vnet" {
   }
 
   network_flow_log = {
-    enabled                                 = true
     storage_account_id                      = azurerm_storage_account.default.id
     traffic_analytics_workspace_enabled     = true
     traffic_analytics_workspace_id          = azurerm_log_analytics_workspace.default.workspace_id
     traffic_analytics_workspace_resource_id = azurerm_log_analytics_workspace.default.id
   }
+}
+
+module "shared-hub-peering" {
+  source = "jsathler/vnet-peering/azurerm"
+
+  providers = {
+    azurerm.local-vnet  = azurerm.shared
+    azurerm.remote-vnet = azurerm
+  }
+
+  local_vnet  = { vnet_id = module.shared-vnet.vnet_id, use_remote_gateways = false }
+  remote_vnet = { vnet_id = module.hub-vnet.vnet_id, allow_gateway_transit = false }
+}
+
+module "prd-hub-peering" {
+  source = "jsathler/vnet-peering/azurerm"
+
+  providers = {
+    azurerm.local-vnet  = azurerm.prd
+    azurerm.remote-vnet = azurerm
+  }
+
+  local_vnet  = { vnet_id = module.prd-vnet.vnet_id, use_remote_gateways = false }
+  remote_vnet = { vnet_id = module.hub-vnet.vnet_id, allow_gateway_transit = false }
 }

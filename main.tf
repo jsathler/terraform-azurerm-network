@@ -1,8 +1,3 @@
-/*
-To-do
-- NAT GW
-*/
-
 locals {
   tags                 = merge(var.tags, { ManagedByTerraform = "True" })
   special_subnet_names = ["GatewaySubnet", "AzureFirewallSubnet", "AzureFirewallManagementSubnet", "AzurebastionSubnet", "RouteServerSubnet"]
@@ -41,8 +36,10 @@ resource "azurerm_subnet" "default" {
 }
 
 # vNet DNS
+# Had to add the depends_on because for some reason terraform apply failed for the first execution
 resource "azurerm_virtual_network_dns_servers" "default" {
-  count = var.dns_servers == null ? 0 : 1
+  depends_on = [azurerm_subnet_network_security_group_association.default, azurerm_subnet_route_table_association.default]
+  count      = var.dns_servers == null ? 0 : 1
 
   virtual_network_id = azurerm_virtual_network.default.id
   dns_servers        = var.dns_servers
@@ -50,7 +47,7 @@ resource "azurerm_virtual_network_dns_servers" "default" {
 
 # User Defined Route
 locals {
-  #Var to simplify user input and keep the standard "resource_name = properties"
+  #Var to simplify user input and keep the "standard" resource_name = properties
   routes = flatten([
     for table_key, table_value in var.route_table : [
       for route_key, route_value in table_value.routes : {
@@ -83,18 +80,7 @@ resource "azurerm_route" "default" {
   next_hop_in_ip_address = each.value.next_hop_in_ip_address
 }
 
-/*
-An workarround to implement a delay between subnet/udr/nsg creation and their association
-Sometimes resources are not actually completely created when the API returns
-*/
-resource "time_sleep" "default" {
-  depends_on      = [azurerm_subnet.default, azurerm_route_table.default, azurerm_network_security_group.default]
-  create_duration = "60s"
-  #destroy_duration = "30s"
-}
-
 resource "azurerm_subnet_route_table_association" "default" {
-  depends_on     = [time_sleep.default]
   for_each       = { for key, value in var.subnets : key => value if value.route_table_name != null }
   subnet_id      = azurerm_subnet.default[each.key].id
   route_table_id = azurerm_route_table.default[each.value.route_table_name].id
@@ -123,7 +109,6 @@ resource "azurerm_network_security_group" "default" {
 }
 
 resource "azurerm_subnet_network_security_group_association" "default" {
-  depends_on                = [time_sleep.default]
   for_each                  = { for key, value in var.subnets : key => value if value.nsg_create_default }
   subnet_id                 = azurerm_subnet.default[each.key].id
   network_security_group_id = azurerm_network_security_group.default[each.key].id

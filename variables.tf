@@ -7,11 +7,13 @@ variable "location" {
 variable "name" {
   description = "Virtual network name. This parameter is required"
   type        = string
+  nullable    = false
 }
 
 variable "resource_group_name" {
   description = "The name of the resource group in which the resources will be created. This parameter is required"
   type        = string
+  nullable    = false
 }
 
 variable "tags" {
@@ -21,7 +23,8 @@ variable "tags" {
 }
 
 variable "address_space" {
-  type = list(string)
+  type     = list(string)
+  nullable = false
 }
 
 variable "dns_servers" {
@@ -46,7 +49,8 @@ variable "subnets" {
     private_endpoint_network_policies_enabled     = optional(bool, true)
     private_link_service_network_policies_enabled = optional(bool, true)
   }))
-  default = {}
+  default  = {}
+  nullable = false
 }
 
 variable "route_table" {
@@ -58,7 +62,8 @@ variable "route_table" {
       next_hop_in_ip_address = optional(string, null)
     }))
   }))
-  default = {}
+  default  = {}
+  nullable = false
 }
 
 variable "local_peering" {
@@ -71,7 +76,8 @@ variable "local_peering" {
     allow_gateway_transit        = optional(bool, false)
     use_remote_gateways          = optional(bool, false)
   }))
-  default = []
+  default  = []
+  nullable = false
 }
 
 variable "network_flow_log" {

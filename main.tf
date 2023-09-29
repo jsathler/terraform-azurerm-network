@@ -135,7 +135,7 @@ resource "azurerm_network_security_rule" "explicit_azlb" {
   for_each                    = { for key, value in var.subnets : key => value if value.nsg_create_default && value.nsg_create_explicit_in_rule }
   resource_group_name         = var.resource_group_name
   network_security_group_name = azurerm_network_security_group.default[each.key].name
-  name                        = "AllowAzureLoadBalancerInBound-nsgsr"
+  name                        = "AllowAzureLoadBalancerInBound-in-allow-nsgsr"
   description                 = "Explicit Azure Load Balancer inbound allow"
   priority                    = 4095
   direction                   = "Inbound"
@@ -161,6 +161,41 @@ resource "azurerm_network_security_rule" "explicit_outbound" {
   destination_port_range      = "*"
   source_address_prefix       = "VirtualNetwork"
   destination_address_prefix  = "*"
+}
+
+locals {
+  nsg_rules = flatten([
+    for subnet_key, subnet_value in var.subnets : [
+      for nsgrules_key, nsgules_value in subnet_value.nsg_rules : {
+        subnet_name = subnet_key
+        rule_name   = "${nsgrules_key}-${lower(nsgules_value.direction) == "inbound" ? "in" : "out"}-${lower(nsgules_value.access)}-nsgsr"
+        params      = nsgules_value
+      }
+    ] if subnet_value.nsg_rules != null
+  ])
+}
+
+#NSG additional rules
+resource "azurerm_network_security_rule" "default" {
+  for_each                                   = { for key, value in local.nsg_rules : "${value.subnet_name}-${value.rule_name}" => value }
+  resource_group_name                        = var.resource_group_name
+  network_security_group_name                = azurerm_network_security_group.default[each.value.subnet_name].name
+  name                                       = each.value.rule_name
+  description                                = each.value.params.description
+  priority                                   = each.value.params.priority
+  direction                                  = each.value.params.direction
+  access                                     = each.value.params.access
+  protocol                                   = each.value.params.protocol
+  source_port_range                          = each.value.params.source_port_ranges == null ? each.value.params.source_port_range : null
+  source_port_ranges                         = each.value.params.source_port_ranges
+  destination_port_range                     = each.value.params.destination_port_range
+  destination_port_ranges                    = each.value.params.destination_port_ranges
+  source_address_prefix                      = each.value.params.source_address_prefix
+  source_address_prefixes                    = each.value.params.source_address_prefixes
+  destination_address_prefix                 = each.value.params.destination_address_prefix
+  destination_address_prefixes               = each.value.params.destination_address_prefixes
+  source_application_security_group_ids      = each.value.params.source_application_security_group_ids
+  destination_application_security_group_ids = each.value.params.destination_application_security_group_ids
 }
 
 # Network Security Group Flow Logs

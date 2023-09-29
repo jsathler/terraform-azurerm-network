@@ -119,7 +119,7 @@ resource "azurerm_network_security_rule" "explicit_inbound" {
   for_each                    = { for key, value in var.subnets : key => value if value.nsg_create_default && value.nsg_create_explicit_in_rule }
   resource_group_name         = var.resource_group_name
   network_security_group_name = azurerm_network_security_group.default[each.key].name
-  name                        = "explicit-in-deny"
+  name                        = "explicit-in-deny-nsgsr"
   description                 = "Explicit inbound deny"
   priority                    = 4096
   direction                   = "Inbound"
@@ -135,7 +135,7 @@ resource "azurerm_network_security_rule" "explicit_azlb" {
   for_each                    = { for key, value in var.subnets : key => value if value.nsg_create_default && value.nsg_create_explicit_in_rule }
   resource_group_name         = var.resource_group_name
   network_security_group_name = azurerm_network_security_group.default[each.key].name
-  name                        = "AllowAzureLoadBalancerInBound"
+  name                        = "AllowAzureLoadBalancerInBound-nsgsr"
   description                 = "Explicit Azure Load Balancer inbound allow"
   priority                    = 4095
   direction                   = "Inbound"
@@ -151,7 +151,7 @@ resource "azurerm_network_security_rule" "explicit_outbound" {
   for_each                    = { for key, value in var.subnets : key => value if value.nsg_create_default && value.nsg_create_explicit_out_rule }
   resource_group_name         = var.resource_group_name
   network_security_group_name = azurerm_network_security_group.default[each.key].name
-  name                        = "explicit-out-deny"
+  name                        = "explicit-out-deny-nsgsr"
   description                 = "Explicit outbound deny"
   priority                    = 4096
   direction                   = "Inbound"

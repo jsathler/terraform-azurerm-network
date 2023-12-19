@@ -71,7 +71,7 @@ resource "azurerm_route_table" "default" {
 }
 
 resource "azurerm_route" "default" {
-  for_each               = { for key, value in local.routes : value.route_name => value }
+  for_each               = { for key, value in local.routes : "${value.route_table_name}-${value.route_name}" => value }
   name                   = "${each.key}-rt"
   resource_group_name    = var.resource_group_name
   route_table_name       = azurerm_route_table.default[each.value.route_table_name].name

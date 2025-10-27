@@ -1,6 +1,6 @@
-# Azure Virtual Network Gateway Terraform module
+# Azure Virtual Network Terraform module
 
-Terraform module which creates Azure Virtual Network Peering on Azure.
+Terraform module which creates Azure Virtual Network resources on Azure.
 
 Supported Azure services:
 

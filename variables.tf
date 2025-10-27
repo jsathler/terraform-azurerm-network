@@ -34,6 +34,18 @@ variable "dns_servers" {
   default     = null
 }
 
+variable "bgp_community" {
+  description = "The BGP community attribute in format <as-number>:<community-value>"
+  type        = string
+  default     = null
+}
+
+variable "flow_timeout_in_minutes" {
+  description = "The flow timeout in minutes for the Virtual Network, which is used to enable connection tracking for intra-VM flows. Possible values are between 4 and 30 minutes"
+  type        = number
+  default     = null
+}
+
 variable "subnets" {
   description = <<DESCRIPTION
   A map of Subnets. This parameter is required
@@ -47,7 +59,7 @@ variable "subnets" {
   - service_delegation                            (optional) A block as defined bellow
     - name                                        (required) The name of service to delegate to
     - actions                                     (optional) A list of Actions which should be delegated. This list is specific to the service to delegate to
-  - private_endpoint_network_policies_enabled     (optional) Enable or Disable network policies for the private endpoint on the subnet. Defaults to true
+  - private_endpoint_network_policies             (optional) Enable or Disable network policies for the private endpoint on the subnet. Possible values are Disabled, Enabled, NetworkSecurityGroupEnabled and RouteTableEnabled. Defaults to Enabled
   - private_link_service_network_policies_enabled (optional) Enable or Disable network policies for the private link service on the subnet. Defaults to true
   - nsg_rules:                                    (optional) A block as defined bellow
     - description                                 (optional) A description for this rule. Restricted to 140 characters
@@ -79,7 +91,7 @@ variable "subnets" {
       name    = string
       actions = optional(list(string), null)
     }), null)
-    private_endpoint_network_policies_enabled     = optional(bool, true)
+    private_endpoint_network_policies             = optional(string, "Enabled")
     private_link_service_network_policies_enabled = optional(bool, true)
     nsg_rules = optional(map(object({
       description                                = optional(string),
@@ -106,14 +118,14 @@ variable "subnets" {
 variable "route_table" {
   description = <<DESCRIPTION
   A map of route tables. This parameter is optional
-   - disable_bgp_route_propagation  (optional) oolean flag which controls propagation of routes learned by BGP on that route table. Defaults to false
+   - bgp_route_propagation_enabled  (optional) Boolean flag which controls propagation of routes learned by BGP on that route table. Defaults to false
    - routes                         (optional) A block as defined bellow
     - address_prefix                (required) The destination to which the route applies. Can be CIDR (such as 10.1.0.0/16) or Azure Service Tag (such as ApiManagement, AzureBackup or AzureMonitor) format
     - next_hop_type                 (required) The type of Azure hop the packet should be sent to. Possible values are VirtualNetworkGateway, VnetLocal, Internet, VirtualAppliance and None
     - next_hop_in_ip_address        (optional) Contains the IP address packets should be forwarded to. Next hop values are only allowed in routes where the next hop type is VirtualAppliance. Defaults to null
   DESCRIPTION  
   type = map(object({
-    disable_bgp_route_propagation = optional(bool, false)
+    bgp_route_propagation_enabled = optional(bool, false)
     routes = map(object({
       address_prefix         = string
       next_hop_type          = string

@@ -5,11 +5,13 @@ locals {
 
 # vNet and Subnets
 resource "azurerm_virtual_network" "default" {
-  name                = "${var.name}-vnet"
-  location            = var.location
-  resource_group_name = var.resource_group_name
-  address_space       = var.address_space
-  tags                = local.tags
+  name                    = "${var.name}-vnet"
+  location                = var.location
+  resource_group_name     = var.resource_group_name
+  address_space           = var.address_space
+  bgp_community           = var.bgp_community
+  flow_timeout_in_minutes = var.flow_timeout_in_minutes
+  tags                    = local.tags
 }
 
 resource "azurerm_subnet" "default" {
@@ -20,7 +22,7 @@ resource "azurerm_subnet" "default" {
   address_prefixes                              = each.value.address_prefixes
   service_endpoints                             = each.value.service_endpoints
   service_endpoint_policy_ids                   = each.value.service_endpoint_policy_ids
-  private_endpoint_network_policies_enabled     = each.value.private_endpoint_network_policies_enabled
+  private_endpoint_network_policies             = each.value.private_endpoint_network_policies
   private_link_service_network_policies_enabled = each.value.private_link_service_network_policies_enabled
 
   dynamic "delegation" {
@@ -66,7 +68,7 @@ resource "azurerm_route_table" "default" {
   name                          = "${each.key}-route"
   location                      = var.location
   resource_group_name           = var.resource_group_name
-  disable_bgp_route_propagation = each.value.disable_bgp_route_propagation
+  bgp_route_propagation_enabled = each.value.bgp_route_propagation_enabled
   tags                          = local.tags
 }
 
@@ -199,6 +201,7 @@ resource "azurerm_network_security_rule" "default" {
 }
 
 # Network Security Group Flow Logs
+# Waiting for https://github.com/hashicorp/terraform-provider-azurerm/issues/25982
 resource "azurerm_network_watcher_flow_log" "default" {
   for_each             = { for key, value in var.subnets : key => value if value.nsg_create_default && var.network_flow_log != null }
   name                 = "${each.key}-netflowlog"
